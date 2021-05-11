@@ -1,7 +1,7 @@
 {
-  "name": "hardhat-ts-plugin-boilerplate",
+  "name": "hardhat-ipfs",
   "version": "0.0.1",
-  "description": "Hardhat TypeScript plugin boilerplate",
+  "description": "Hardhat TypeScript plugin ipfs",
   "repository": "github:nomiclabs/hardhat-ts-plugin-boilerplate",
   "author": "Nomic Labs LLC",
   "license": "MIT",
@@ -11,7 +11,8 @@
     "ethereum",
     "smart-contracts",
     "hardhat",
-    "hardhat-plugin"
+    "hardhat-plugin",
+    "ipfs"
   ],
   "scripts": {
     "lint:fix": "prettier --write 'src/**/*.{js,ts}' 'test/**/*.{js,ts}' && tslint --fix --config tslint.json --project tsconfig.json",
@@ -43,5 +44,8 @@
   },
   "peerDependencies": {
     "hardhat": "^2.0.0"
+  },
+  "dependencies": {
+    "ipfs-http-client": "^50.0.0"
   }
 }

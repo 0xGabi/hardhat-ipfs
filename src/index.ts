@@ -1,49 +1,88 @@
-import { extendConfig, extendEnvironment } from "hardhat/config";
-import { lazyObject } from "hardhat/plugins";
+import { extendConfig, extendEnvironment, task } from "hardhat/config";
+import { lazyObject, HardhatPluginError } from "hardhat/plugins";
 import { HardhatConfig, HardhatUserConfig } from "hardhat/types";
-import path from "path";
 
-import { ExampleHardhatRuntimeEnvironmentField } from "./ExampleHardhatRuntimeEnvironmentField";
 // This import is needed to let the TypeScript compiler know that it should include your type
 // extensions in your npm package's types file.
 import "./type-extensions";
 
+import { DEFAULT_IPFS_ENDPOINT } from "./constants";
+import { PinningService } from "./types";
+
+export const TASK_IPFS_UPLOAD = "upload";
+export const TASK_IPFS_PIN = "pin";
+
 extendConfig(
   (config: HardhatConfig, userConfig: Readonly<HardhatUserConfig>) => {
-    // We apply our default config here. Any other kind of config resolution
-    // or normalization should be placed here.
-    //
-    // `config` is the resolved config, which will be used during runtime and
-    // you should modify.
-    // `userConfig` is the config as provided by the user. You should not modify
-    // it.
-    //
-    // If you extended the `HardhatConfig` type, you need to make sure that
-    // executing this function ensures that the `config` object is in a valid
-    // state for its type, including its extentions. For example, you may
-    // need to apply a default value, like in this example.
-    const userPath = userConfig.paths?.newPath;
-
-    let newPath: string;
-    if (userPath === undefined) {
-      newPath = path.join(config.paths.root, "newPath");
-    } else {
-      if (path.isAbsolute(userPath)) {
-        newPath = userPath;
-      } else {
-        // We resolve relative paths starting from the project's root.
-        // Please keep this convention to avoid confusion.
-        newPath = path.normalize(path.join(config.paths.root, userPath));
-      }
-    }
-
-    config.paths.newPath = newPath;
+    config.ipfs = userConfig.ipfs || {
+      url: DEFAULT_IPFS_ENDPOINT,
+    };
   }
 );
 
 extendEnvironment((hre) => {
-  // We add a field to the Hardhat Runtime Environment here.
-  // We use lazyObject to avoid initializing things until they are actually
-  // needed.
-  hre.example = lazyObject(() => new ExampleHardhatRuntimeEnvironmentField());
+  hre.ipfs = lazyObject(() => {
+    const ipfsHttpClient = require("ipfs-http-client");
+
+    let url;
+    try {
+      url = new URL(hre.config.ipfs.url);
+    } catch (e) {
+      throw new HardhatPluginError(`Invalid IPFS URL: ${hre.config.ipfs.url}
+The IPFS URL must be of the following format: http(s)://host[:port]/[path]`);
+    }
+
+    return ipfsHttpClient({
+      protocol: url.protocol.replace(/[:]+$/, ""),
+      host: url.hostname,
+      port: url.port,
+      "api-path": url.pathname.replace(/\/$/, "") + "/api/v0/",
+    });
+  });
 });
+
+async function addPinningServices(ipfs: any, pinning: PinningService[]): void {
+  const exitingServices = await ipfs.pin.remote.service.ls();
+
+  Promise.all(async () => {
+    pinning.forEach(service => exitingServices.)
+  });
+}
+
+task(TASK_IPFS_UPLOAD, "Upload file to IPFS")
+  .addFlag("file", "File to upload")
+  .addFlag("pin", "")
+  .setAction(async (args, hre) => {
+    try {
+      let hash = (await hre.ipfs.add([file]))[0].hash;
+      if (pin) {
+        addPinningServices();
+        await hre.ipfs.pin.add(hash);
+      }
+      return hash;
+    } catch (e) {
+      throw new HardhatPluginError(
+        `Failed to upload file to IPFS: ${e.message}`
+      );
+    }
+  });
+
+task(TASK_IPFS_PIN, "Pin hash to IPFS")
+  .addFlag("file", "File to upload")
+  .addFlag("pin", "")
+  .setAction(async (args, hre) => {
+    try {
+      let hash = (await hre.ipfs.add([file]))[0].hash;
+      await hre.ipfs.pin.add(hash)
+      return hash;
+    } catch (e) {
+      throw new HardhatPluginError(
+        `Failed to upload file to IPFS: ${e.message}`
+      );
+    }
+    if (pin) {
+        addPinningServices();
+        await hre.ipfs.pin.add(hash);
+      }
+            return hash;
+  });
